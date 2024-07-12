@@ -168,7 +168,7 @@
                             }
 
                             messageBox.innerHTML = message;
-                        }, 120000); // 120000 milliseconds = 2 minutes
+                        }, 15000); // 15000 milliseconds = 15 seconds
                     }
                 } else {
                     displayWelcomeMessage(stationManager);
@@ -209,6 +209,7 @@
             if (newStation !== null && newStation !== '') {
                 currentStationCode = newStation.trim().toUpperCase();
                 clearInterval(fallbackInterval); // Clear any existing fallback interval
+                clearInterval(messageInterval); // Clear message cycling interval
                 fetchNRCCMessages(); // Fetch messages for the new station
             }
         }
