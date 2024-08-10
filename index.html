@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -137,11 +136,10 @@
         }
 
         /* Grey rectangle at the bottom of the page */
-                    /* Grey rectangle at the bottom of the page */
         .footer {
             background-color: grey;
             color: yellow;
-            height: 100px;
+            height: 125px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -235,6 +233,7 @@
     // Variable to store previous calling points and subsequent locations for comparison
     let previousCallingPoints = [];
     let previousSubsequentLocations = [];
+    let previousDestinations = []; // Track previous destinations
 
     // Function to fetch and update both departures and calling points
     async function updateDepartures(crsCode) {
@@ -246,7 +245,7 @@
             // Log the entire data to the console for debugging
             console.log('API Data:', data);
 
-// Update station name in the footer with "Railway Station" and a space after "Welcome to"
+            // Update station name in the footer with "Railway Station" and a space after "Welcome to"
             const stationName = data.locationName || '';
             document.getElementById('station-name').textContent = `Live Departures from ${stationName} Railway Station`;
 
@@ -323,12 +322,12 @@
                                 return `${truncateCallingPoint(cleanedName)} (${timeToShow})`;
                             });
 
-                        // Compare current calling points with the previous ones
-                        if (!arraysEqual(previousSubsequentLocations[index] || [], currentSubsequentLocations)) {
-                            previousSubsequentLocations[index] = currentSubsequentLocations;
+                        // Compare current destinations with the previous ones
+                        if (previousDestinations[index] !== destination) {
+                            previousDestinations[index] = destination;
 
                             // Split calling points into pages
-                            const pageSize = 10;
+                            const pageSize = 9;
                             const pages = [];
                             for (let i = 0; i < currentSubsequentLocations.length; i += pageSize) {
                                 pages.push(currentSubsequentLocations.slice(i, i + pageSize));
@@ -342,13 +341,16 @@
 
                             updateCallingPoints(); // Initial call to show the first page
 
-                            // Update calling points every 10 seconds
-                            if (!section.hasAttribute('data-interval')) {
-                                section.setAttribute('data-interval', setInterval(() => {
-                                    pages.push(pages.shift()); // Move the first page to the end
-                                    updateCallingPoints();
-                                }, 10000));
+                            // Clear previous interval
+                            if (section.hasAttribute('data-interval')) {
+                                clearInterval(Number(section.getAttribute('data-interval')));
                             }
+
+                            // Set a new interval to update calling points every 10 seconds
+                            section.setAttribute('data-interval', setInterval(() => {
+                                pages.push(pages.shift()); // Move the first page to the end
+                                updateCallingPoints();
+                            }, 10000));
                         }
 
                         // Operator
@@ -422,7 +424,7 @@
 
     // Directly set the CRS code to "CAR" and start updating
     window.onload = function() {
-        const crsCode = "EUS";
+        const crsCode = "WAT";
         startUpdating(crsCode); // Start updating departures and calling points for the CRS code "CAR"
     };
     </script>
