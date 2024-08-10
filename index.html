@@ -142,7 +142,7 @@
             height: 100px;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: left;
             font-size: 75px; /* Adjusted font size */
             font-weight: bold;
             text-align: center; /* Center-align text */
@@ -222,6 +222,14 @@
         return text;
     }
 
+    // Function to truncate calling point text to a maximum length of 14 characters
+    function truncateCallingPoint(text) {
+        if (text.length > 17) { // Check if the length exceeds 17 characters
+            return text.substring(0, 14) + '...';
+        }
+        return text;
+    }
+
     // Variable to store previous calling points and subsequent locations for comparison
     let previousCallingPoints = [];
     let previousSubsequentLocations = [];
@@ -238,7 +246,7 @@
 
             // Update station name in the footer with "Railway Station" and a space after "Welcome to"
             const stationName = data.locationName || 'N/A';
-            document.getElementById('station-name').textContent = `Welcome to ${stationName} Railway Station`;
+            document.getElementById('station-name').textContent = `${stationName} Live Departures`;
 
             // Check if data has a property named 'trainServices'
             if (data.trainServices && data.trainServices.length > 0) {
@@ -310,7 +318,7 @@
                                 // Use ETA for the last calling point, otherwise use STD
                                 const timeToShow = loc === service.subsequentLocations[service.subsequentLocations.length - 1] ? eta : std;
 
-                                return `${cleanedName} (${timeToShow})`;
+                                return `${truncateCallingPoint(cleanedName)} (${timeToShow})`;
                             });
 
                         // Compare current calling points with the previous ones
