@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -136,19 +137,20 @@
         }
 
         /* Grey rectangle at the bottom of the page */
+                    /* Grey rectangle at the bottom of the page */
         .footer {
             background-color: grey;
             color: yellow;
             height: 100px;
             display: flex;
-            justify-content: left;
-            align-items: left;
+            justify-content: center;
+            align-items: center;
             font-size: 75px; /* Adjusted font size */
             font-weight: bold;
             text-align: center; /* Center-align text */
             position: absolute; /* Position it absolutely */
-            width: 1920px; /* Set width of the footer */
-            left: 10;
+            width: 3840px; /* Set width of the footer */
+            left: 0;
             bottom: 0; /* Align it to the bottom */
         }
     </style>
@@ -244,9 +246,9 @@
             // Log the entire data to the console for debugging
             console.log('API Data:', data);
 
-            // Update station name in the footer with "Railway Station" and a space after "Welcome to"
+// Update station name in the footer with "Railway Station" and a space after "Welcome to"
             const stationName = data.locationName || '';
-            document.getElementById('station-name').textContent = `${stationName} Station Live Train Departures`;
+            document.getElementById('station-name').textContent = `Live Departures from ${stationName} Railway Station`;
 
             // Check if data has a property named 'trainServices'
             if (data.trainServices && data.trainServices.length > 0) {
