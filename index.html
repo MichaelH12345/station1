@@ -141,14 +141,14 @@
             color: yellow;
             height: 100px;
             display: flex;
-            justify-content: center;
+            justify-content: left;
             align-items: left;
             font-size: 75px; /* Adjusted font size */
             font-weight: bold;
             text-align: center; /* Center-align text */
             position: absolute; /* Position it absolutely */
-            width: 3840px; /* Set width of the footer */
-            left: 0;
+            width: 1920px; /* Set width of the footer */
+            left: 10;
             bottom: 0; /* Align it to the bottom */
         }
     </style>
@@ -245,8 +245,8 @@
             console.log('API Data:', data);
 
             // Update station name in the footer with "Railway Station" and a space after "Welcome to"
-            const stationName = data.locationName || 'N/A';
-            document.getElementById('station-name').textContent = `${stationName} Live Departures`;
+            const stationName = data.locationName || '';
+            document.getElementById('station-name').textContent = `${stationName} Station Live Train Departures`;
 
             // Check if data has a property named 'trainServices'
             if (data.trainServices && data.trainServices.length > 0) {
