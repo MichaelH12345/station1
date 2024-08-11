@@ -292,9 +292,9 @@
                                 statusBox.style.backgroundColor = 'white';
                                 statusBox.style.color = 'black';
                             } else {
-                                statusBox.textContent = 'Delayed'; // Default status for other cases
-                                statusBox.style.backgroundColor = '#db5039'; // Red background
-                                statusBox.style.color = 'white'; // White text
+                                statusBox.textContent = 'On Time'; // Default status for other cases
+                                statusBox.style.backgroundColor = 'white'; // Red background
+                                statusBox.style.color = 'black'; // White text
                             }
                         } else {
                             statusBox.textContent = 'N/A';
@@ -425,7 +425,7 @@
 
     // Directly set the CRS code to "CAR" and start updating
     window.onload = function() {
-        const crsCode = "CAR";
+        const crsCode = "EUS";
         startUpdating(crsCode); // Start updating departures and calling points for the CRS code "CAR"
     };
     </script>
