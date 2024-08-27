@@ -248,7 +248,7 @@
 
             // Update station name in the footer with "Railway Station" and a space after "Welcome to"
             const stationName = data.locationName || '';
-            document.getElementById('station-name').textContent = `Live departures from ${stationName}`; Railway Station'
+            document.getElementById('station-name').textContent = `Live departures from ${stationName} Railway Station`;
 
             // Check if data has a property named 'trainServices'
             if (data.trainServices && data.trainServices.length > 0) {
@@ -425,7 +425,7 @@
 
     // Directly set the CRS code to "CAR" and start updating
     window.onload = function() {
-        const crsCode = "EUS";
+        const crsCode = "CAR";
         startUpdating(crsCode); // Start updating departures and calling points for the CRS code "CAR"
     };
     </script>
