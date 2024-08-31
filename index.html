@@ -152,61 +152,91 @@
             left: 0;
             bottom: 0; /* Align it to the bottom */
         }
+
+/* Reason box styling */
+.reason-box {
+    position: absolute;
+    width: calc(100% - 50px); /* Full width minus 25px padding on each side */
+    height: 150px;
+    background-color: grey;
+    color: white;
+    border-left: 5px solid red; /* Default red border for delay/cancellation reasons */
+    padding: 25px;
+    box-sizing: border-box;
+    bottom: 75px;
+    left: 25px; /* 25px from the left of the section */
+    overflow: hidden; /* Ensure text doesn't overflow */
+    display: flex;
+    align-items: center; /* Center text vertically */
+    justify-content: center; /* Center text horizontally */
+    font-size: 40px; /* Adjust font size as needed */
+}
+
+/* Class for yellow border when displaying general information */
+.reason-box.yellow-border {
+    border-left: 5px solid yellow;
+}
+
+
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <!-- Section 1 -->
-        <div class="section" data-index="0">
-            <div class="platform"></div>
-            <div class="time-container">
-                <div class="time"></div>
-                <div class="status-box"></div>
-            </div>
-            <div class="destination"></div>
-            <div class="info">
-                <div class="toc"></div>
-                <div class="carriages"></div>
-            </div>
-            <div class="calling-points"></div> <!-- New text box for calling points -->
+ <div class="container">
+    <!-- Section 1 -->
+    <div class="section" data-index="0">
+        <div class="platform"></div>
+        <div class="time-container">
+            <div class="time"></div>
+            <div class="status-box"></div>
         </div>
-        <!-- Section 2 -->
-        <div class="section" data-index="1">
-            <div class="platform"></div>
-            <div class="time-container">
-                <div class="time"></div>
-                <div class="status-box"></div>
-            </div>
-            <div class="destination"></div>
-            <div class="info">
-                <div class="toc"></div>
-                <div class="carriages"></div>
-            </div>
-            <div class="calling-points"></div> <!-- New text box for calling points -->
+        <div class="destination"></div>
+        <div class="info">
+            <div class="toc"></div>
+            <div class="carriages"></div>
         </div>
-        <!-- Section 3 -->
-        <div class="section" data-index="2">
-            <div class="platform"></div>
-            <div class="time-container">
-                <div class="time"></div>
-                <div class="status-box"></div>
-            </div>
-            <div class="destination"></div>
-            <div class="info">
-                <div class="toc"></div>
-                <div class="carriages"></div>
-            </div>
-            <div class="calling-points"></div> <!-- New text box for calling points -->
-        </div>
+        <div class="calling-points"></div> <!-- New text box for calling points -->
+        <div class="reason-box"></div> <!-- New text box for reason -->
     </div>
+    <!-- Section 2 -->
+    <div class="section" data-index="1">
+        <div class="platform"></div>
+        <div class="time-container">
+            <div class="time"></div>
+            <div class="status-box"></div>
+        </div>
+        <div class="destination"></div>
+        <div class="info">
+            <div class="toc"></div>
+            <div class="carriages"></div>
+        </div>
+        <div class="calling-points"></div> <!-- New text box for calling points -->
+        <div class="reason-box"></div> <!-- New text box for reason -->
+    </div>
+    <!-- Section 3 -->
+    <div class="section" data-index="2">
+        <div class="platform"></div>
+        <div class="time-container">
+            <div class="time"></div>
+            <div class="status-box"></div>
+        </div>
+        <div class="destination"></div>
+        <div class="info">
+            <div class="toc"></div>
+            <div class="carriages"></div>
+        </div>
+        <div class="calling-points"></div> <!-- New text box for calling points -->
+        <div class="reason-box"></div> <!-- New text box for reason -->
+    </div>
+</div>
+
 
     <!-- Grey footer with station name -->
     <div class="footer" id="station-footer">
         <span id="station-name">N/A</span>
     </div>
 
-    <script>
+<script>
     // Function to format time into BST hours and minutes
     function formatTime(timeString) {
         if (!timeString) return 'N/A';
@@ -236,7 +266,215 @@
     let previousSubsequentLocations = [];
     let previousDestinations = []; // Track previous destinations
 
-    // Function to fetch and update both departures and calling points
+    // Fetch and cache lateness codes
+    let latenessCodes = {};
+    async function fetchLatenessCodes() {
+        try {
+            const response = await fetch('https://raw.githubusercontent.com/davwheat/raildotmatrix.co.uk/main/src/api/LatenessCodes.json');
+            latenessCodes = await response.json();
+            console.log('Lateness Codes:', latenessCodes);
+        } catch (error) {
+            console.error('Error fetching lateness codes:', error);
+        }
+    }
+
+    // Fetch and cache cancellation codes
+    let cancellationCodes = {};
+    async function fetchCancellationCodes() {
+        try {
+            const response = await fetch('https://raw.githubusercontent.com/davwheat/raildotmatrix.co.uk/main/src/api/CancellationCodes.json');
+            cancellationCodes = await response.json();
+            console.log('Cancellation Codes:', cancellationCodes);
+        } catch (error) {
+            console.error('Error fetching cancellation codes:', error);
+        }
+    }
+
+    // Initialize function to fetch codes
+    async function initialize() {
+        await fetchLatenessCodes();
+        await fetchCancellationCodes();
+    }
+
+    // Function to handle formation and toilet information
+    function handleFormationAndToilets(service) {
+        const coaches = service.formation && service.formation.coaches ? service.formation.coaches : [];
+        const accessibleToilets = [];
+
+        let hasFirstClass = false;
+        let accessibleToiletsCount = 0;
+        let onlyStandardClass = true;
+
+        // Initialize length variables
+        const formationLength = service.formation && service.formation.length ? service.formation.length : null;
+        const serviceLength = service.length ? service.length : null;
+
+        let displayLength = 0;
+
+        if (formationLength !== null && formationLength > 0) {
+            displayLength = Math.max(displayLength, formationLength);
+        }
+
+        if (serviceLength !== null && serviceLength > 0) {
+            displayLength = Math.max(displayLength, serviceLength);
+        }
+
+        // Check for first class and accessible toilets
+        if (coaches.length > 0) {
+            coaches.forEach((coach) => {
+                // Determine if the train has first class coaches
+                if (coach.coachClass === 'First') {
+                    hasFirstClass = true;
+                    onlyStandardClass = false; // There's first class, so it's not only standard
+                } else if (coach.coachClass === 'Standard') {
+                    onlyStandardClass = onlyStandardClass && true; // Keep it true if all coaches are standard
+                }
+
+                // Check for Accessible toilets
+                if (coach.toilet && coach.toilet.value === 'Accessible') {
+                    accessibleToilets.push(coach.number);
+                    accessibleToiletsCount++;
+                }
+            });
+        }
+
+        // Prepare formation info
+        let formationInfo = '';
+        let firstClassFront = null;
+        let firstClassRear = null;
+        let standardClassFront = null;
+        let standardClassRear = null;
+        let accessibleToiletsList = [];
+
+        if (coaches.length > 0) {
+            coaches.forEach((coach) => {
+                if (coach.coachClass === 'First') {
+                    if (firstClassFront === null) {
+                        firstClassFront = coach.number;
+                    } else {
+                        firstClassRear = coach.number;
+                    }
+                } else if (coach.coachClass === 'Standard') {
+                    if (standardClassFront === null) {
+                        standardClassFront = coach.number;
+                    }
+                    standardClassRear = coach.number;
+                }
+
+                // Check for Accessible toilets
+                if (coach.toilet && coach.toilet.value === 'Accessible') {
+                    accessibleToiletsList.push(coach.number);
+                }
+            });
+
+            if (firstClassFront !== null && firstClassRear !== null) {
+                formationInfo += `First ${firstClassFront} - ${firstClassRear}`;
+            } else if (onlyStandardClass) {
+                formationInfo += 'No first class onboard.';
+            }
+
+            if (standardClassFront !== null && standardClassRear !== null) {
+                formationInfo += (formationInfo ? '\n' : '') + `Standard ${standardClassFront} - ${standardClassRear}`;
+            }
+
+            if (accessibleToiletsList.length === 1) {
+                formationInfo += (formationInfo ? '\n' : '') + `Accessible toilet in coach ${accessibleToiletsList[0]}.`;
+            } else if (accessibleToiletsList.length > 1) {
+                formationInfo += (formationInfo ? '\n' : '') + `Accessible toilet in coaches ${accessibleToiletsList.slice(0, -1).join(', ')} and ${accessibleToiletsList.slice(-1)}.`;
+            } else {
+                formationInfo += (formationInfo ? '\n' : '') + 'No accessible toilet onboard.';
+            }
+        }
+
+        // Determine additional messages for West Midlands Railway
+        let priorityInfo = '';
+        if (service.operator === 'West Midlands Trains') {
+            if (hasFirstClass) {
+                priorityInfo += 'First class is available on the train.';
+            }
+            if (accessibleToiletsCount === 1) {
+                priorityInfo += (priorityInfo ? '\n' : '') + 'Accessible toilet onboard.';
+            } else if (accessibleToiletsCount > 1) {
+                priorityInfo += (priorityInfo ? '\n' : '') + 'Accessible toilets onboard.';
+            }
+            if (onlyStandardClass) {
+                priorityInfo += (priorityInfo ? '\n' : '') + 'No first class onboard.';
+            }
+
+            return priorityInfo.trim(); // Return priority info for West Midlands Railway
+        }
+
+        return formationInfo.trim(); // Return general formation information
+    }
+
+    // Function to handle reasons for delay and cancellation
+    function handleReasons(service, section) {
+        const reasonBox = section.querySelector('.reason-box');
+
+        // Reset the reason box
+        reasonBox.classList.remove('yellow-border'); // Remove any previous border class
+        reasonBox.style.borderLeft = 'none'; // Reset border style
+        reasonBox.style.display = 'none'; // Hide reason box initially
+
+        if (service.isCancelled && service.cancelReason && service.cancelReason.value) {
+            const cancelCode = service.cancelReason.value;
+            const cancelReason = cancellationCodes[cancelCode] || 'Unknown cancellation reason';
+            reasonBox.textContent = cancelReason.replace('This train has been cancelled because of', 'Service cancelled because of');
+            reasonBox.style.borderLeft = '10px solid red'; // Red border for cancellation
+            reasonBox.style.display = 'flex'; // Show the reason box
+        } else if (service.delayReason && service.delayReason.value) {
+            const delayCode = service.delayReason.value;
+            const delayReason = latenessCodes[delayCode] || 'Unknown delay reason';
+            reasonBox.textContent = delayReason.replace('This train has been delayed by', 'Service delayed because of');
+            reasonBox.style.borderLeft = '10px solid red'; // Red border for delay
+            reasonBox.style.display = 'flex'; // Show the reason box
+        } else {
+            // Handle formation and toilet information
+            const formationInfo = handleFormationAndToilets(service);
+
+            if (formationInfo) {
+                reasonBox.textContent = formationInfo; // Update reason box with formation info
+                reasonBox.style.borderLeft = '10px solid yellow'; // Yellow border for general info
+                reasonBox.style.display = 'flex'; // Show the reason box
+            }
+        }
+    }
+
+    // Function to update calling points
+    function updateCallingPoints(section, callingPoints) {
+        // Determine the number of calling points per page based on the status box visibility
+        const statusBox = section.querySelector('.status-box');
+        let callingPointsPerPage = statusBox && statusBox.style.display === 'flex' ? 6 : 9;
+
+        // Split calling points into pages based on the dynamic page size
+        const pages = [];
+        for (let i = 0; i < callingPoints.length; i += callingPointsPerPage) {
+            pages.push(callingPoints.slice(i, i + callingPointsPerPage));
+        }
+
+        // Update calling points
+        function displayPage(pageIndex) {
+            const page = pages[pageIndex] || [];
+            section.querySelector('.calling-points').innerHTML = page.map(loc => `<div>${loc}</div>`).join('');
+        }
+
+        // Initial display of the first page
+        displayPage(0);
+
+        // Clear previous interval
+        if (section.hasAttribute('data-interval')) {
+            clearInterval(Number(section.getAttribute('data-interval')));
+        }
+
+        // Set a new interval to update calling points every 10 seconds
+        section.setAttribute('data-interval', setInterval(() => {
+            // Move the first page to the end and display the next page
+            pages.push(pages.shift());
+            displayPage(0);
+        }, 10000));
+    }
+
+    // Update departures function to handle trainServices array
     async function updateDepartures(crsCode) {
         try {
             console.log('Fetching data from API...');
@@ -246,7 +484,7 @@
             // Log the entire data to the console for debugging
             console.log('API Data:', data);
 
-            // Update station name in the footer with "Railway Station" and a space after "Welcome to"
+            // Update station name in the footer
             const stationName = data.locationName || '';
             document.getElementById('station-name').textContent = `Live departures from ${stationName} Railway Station`;
 
@@ -259,12 +497,10 @@
                         // Platform
                         const platform = service.platform ? `Platform ${service.platform}` : 'Platform N/A';
                         section.querySelector('.platform').textContent = platform;
-                        console.log(`Platform for section ${index + 1}: ${platform}`);
 
                         // Time
                         const time = formatTime(service.std);
                         section.querySelector('.time').textContent = time;
-                        console.log(`Time for section ${index + 1}: ${time}`);
 
                         // Status
                         const statusBox = section.querySelector('.status-box');
@@ -301,12 +537,10 @@
                             statusBox.style.backgroundColor = 'white';
                             statusBox.style.color = 'black';
                         }
-                        console.log(`Status for section ${index + 1}: ${statusBox.textContent}`);
 
                         // Destination
                         const destination = service.destination && service.destination.length > 0 ? service.destination[0].locationName || 'N/A' : 'N/A';
                         section.querySelector('.destination').textContent = destination;
-                        console.log(`Destination for section ${index + 1}: ${destination}`);
 
                         // Calling Points
                         const currentSubsequentLocations = service.subsequentLocations
@@ -327,31 +561,8 @@
                         if (previousDestinations[index] !== destination) {
                             previousDestinations[index] = destination;
 
-                            // Split calling points into pages
-                            const pageSize = 9;
-                            const pages = [];
-                            for (let i = 0; i < currentSubsequentLocations.length; i += pageSize) {
-                                pages.push(currentSubsequentLocations.slice(i, i + pageSize));
-                            }
-
                             // Update calling points
-                            function updateCallingPoints() {
-                                const page = pages[0] || [];
-                                section.querySelector('.calling-points').innerHTML = page.map(loc => `<div>${loc}</div>`).join('');
-                            }
-
-                            updateCallingPoints(); // Initial call to show the first page
-
-                            // Clear previous interval
-                            if (section.hasAttribute('data-interval')) {
-                                clearInterval(Number(section.getAttribute('data-interval')));
-                            }
-
-                            // Set a new interval to update calling points every 10 seconds
-                            section.setAttribute('data-interval', setInterval(() => {
-                                pages.push(pages.shift()); // Move the first page to the end
-                                updateCallingPoints();
-                            }, 10000));
+                            updateCallingPoints(section, currentSubsequentLocations);
                         }
 
                         // Operator
@@ -363,7 +574,6 @@
                             operator = truncateText(operator, 17);
                         }
                         section.querySelector('.toc').textContent = operator;
-                        console.log(`Operator for section ${index + 1}: ${operator}`);
 
                         // Carriages (formation)
                         let formation = null;
@@ -393,7 +603,9 @@
                         // Set carriages text and color
                         section.querySelector('.carriages').style.color = textColor;
                         section.querySelector('.carriages').textContent = displayText;
-                        console.log(`Formation for section ${index + 1}: ${displayText}`);
+
+                        // Handle reasons for delay or cancellation
+                        handleReasons(service, section);
                     } else {
                         console.log(`No data available for section ${index + 1}`);
                     }
@@ -406,15 +618,6 @@
         }
     }
 
-    // Helper function to check if two arrays are equal
-    function arraysEqual(arr1, arr2) {
-        if (arr1.length !== arr2.length) return false;
-        for (let i = 0; i < arr1.length; i++) {
-            if (arr1[i] !== arr2[i]) return false;
-        }
-        return true;
-    }
-
     // Function to start updating both the departures and calling points
     function startUpdating(crsCode) {
         // Initial update
@@ -423,12 +626,17 @@
         setInterval(() => updateDepartures(crsCode), 10000);
     }
 
-    // Directly set the CRS code to "CAR" and start updating
+    // Call the initialize function and start updating
     window.onload = function() {
-        const crsCode = "WFJ";
-        startUpdating(crsCode); // Start updating departures and calling points for the CRS code "CAR"
+        initialize().then(() => {
+            const crsCode = "CAR"; // You can change this to any valid CRS code
+            startUpdating(crsCode); // Start updating departures and calling points for the CRS code
+        });
     };
-    </script>
+</script>
+
+
+
 
 </body>
 </html>
