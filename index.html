@@ -266,7 +266,7 @@
     let previousSubsequentLocations = [];
     let previousDestinations = []; // Track previous destinations
 
-    // Fetch and cache lateness codes
+     // Fetch and cache lateness codes
     let latenessCodes = {};
     async function fetchLatenessCodes() {
         try {
@@ -298,47 +298,32 @@
 
     // Function to handle formation and toilet information
     function handleFormationAndToilets(service) {
-        const coaches = service.formation && service.formation.coaches ? service.formation.coaches : [];
+        const coaches = service.formation?.coaches || [];
         const accessibleToilets = [];
-
         let hasFirstClass = false;
         let accessibleToiletsCount = 0;
         let onlyStandardClass = true;
 
-        // Initialize length variables
-        const formationLength = service.formation && service.formation.length ? service.formation.length : null;
-        const serviceLength = service.length ? service.length : null;
+        const formationLength = service.formation?.length || null;
+        const serviceLength = service.length || null;
+        let displayLength = Math.max(formationLength || 0, serviceLength || 0);
 
-        let displayLength = 0;
-
-        if (formationLength !== null && formationLength > 0) {
-            displayLength = Math.max(displayLength, formationLength);
-        }
-
-        if (serviceLength !== null && serviceLength > 0) {
-            displayLength = Math.max(displayLength, serviceLength);
-        }
-
-        // Check for first class and accessible toilets
         if (coaches.length > 0) {
             coaches.forEach((coach) => {
-                // Determine if the train has first class coaches
                 if (coach.coachClass === 'First') {
                     hasFirstClass = true;
-                    onlyStandardClass = false; // There's first class, so it's not only standard
+                    onlyStandardClass = false;
                 } else if (coach.coachClass === 'Standard') {
-                    onlyStandardClass = onlyStandardClass && true; // Keep it true if all coaches are standard
+                    onlyStandardClass = onlyStandardClass && true;
                 }
 
-                // Check for Accessible toilets
-                if (coach.toilet && coach.toilet.value === 'Accessible') {
+                if (coach.toilet?.value === 'Accessible') {
                     accessibleToilets.push(coach.number);
                     accessibleToiletsCount++;
                 }
             });
         }
 
-        // Prepare formation info
         let formationInfo = '';
         let firstClassFront = null;
         let firstClassRear = null;
@@ -361,19 +346,16 @@
                     standardClassRear = coach.number;
                 }
 
-                // Check for Accessible toilets
-                if (coach.toilet && coach.toilet.value === 'Accessible') {
+                if (coach.toilet?.value === 'Accessible') {
                     accessibleToiletsList.push(coach.number);
                 }
             });
 
-            if (firstClassFront !== null && firstClassRear !== null) {
+            if (firstClassFront && firstClassRear) {
                 formationInfo += `First ${firstClassFront} - ${firstClassRear}`;
-            } else if (onlyStandardClass) {
-                formationInfo += '';
             }
 
-            if (standardClassFront !== null && standardClassRear !== null) {
+            if (standardClassFront && standardClassRear) {
                 formationInfo += (formationInfo ? '\n' : '') + `Standard ${standardClassFront} - ${standardClassRear}`;
             }
 
@@ -386,56 +368,65 @@
             }
         }
 
-        // Determine additional messages for West Midlands Railway
         let priorityInfo = '';
         if (service.operator === 'West Midlands Trains') {
             if (hasFirstClass) {
                 priorityInfo += 'First class is available on the train.';
             }
-            if (accessibleToiletsCount === 1) {
-                priorityInfo += (priorityInfo ? '\n' : '') + 'Accessible toilet onboard.';
-            } else if (accessibleToiletsCount > 1) {
-                priorityInfo += (priorityInfo ? '\n' : '') + 'Accessible toilets onboard.';
+            if (accessibleToiletsCount > 1) {
+                priorityInfo += (priorityInfo ? '\n' : '') + 'Accessible toilets are available.';
+            } else if (accessibleToiletsCount > 0) {
+                priorityInfo += (priorityInfo ? '\n' : '') + 'Accessible toilet is available.';
+            } else {
+                priorityInfo += (priorityInfo ? '\n' : '') + 'No accessible toilets onboard.';
             }
-            if (onlyStandardClass) {
-                priorityInfo += (priorityInfo ? '\n' : '') + '';
-            }
-
-            return priorityInfo.trim(); // Return priority info for West Midlands Railway
+        } else if (service.operator === 'Northern') {
+            priorityInfo += (priorityInfo ? '\n' : '') + 'Reserve seats up to 5 minutes prior to departure';
         }
 
-        return formationInfo.trim(); // Return general formation information
+        return priorityInfo.trim() || formationInfo.trim();
     }
 
-    // Function to handle reasons for delay and cancellation
     function handleReasons(service, section) {
         const reasonBox = section.querySelector('.reason-box');
+        reasonBox.classList.remove('yellow-border');
+        reasonBox.style.borderLeft = 'none';
+        reasonBox.style.display = 'none';
 
-        // Reset the reason box
-        reasonBox.classList.remove('yellow-border'); // Remove any previous border class
-        reasonBox.style.borderLeft = 'none'; // Reset border style
-        reasonBox.style.display = 'none'; // Hide reason box initially
-
-        if (service.isCancelled && service.cancelReason && service.cancelReason.value) {
+        if (service.isCancelled && service.cancelReason?.value) {
             const cancelCode = service.cancelReason.value;
             const cancelReason = cancellationCodes[cancelCode] || 'Unknown cancellation reason';
             reasonBox.textContent = cancelReason.replace('This train has been cancelled because of', 'Service cancelled because of');
-            reasonBox.style.borderLeft = '10px solid red'; // Red border for cancellation
-            reasonBox.style.display = 'flex'; // Show the reason box
-        } else if (service.delayReason && service.delayReason.value) {
+            reasonBox.style.borderLeft = '10px solid red';
+            reasonBox.style.display = 'flex';
+        } else if (service.delayReason?.value) {
             const delayCode = service.delayReason.value;
             const delayReason = latenessCodes[delayCode] || 'Unknown delay reason';
             reasonBox.textContent = delayReason.replace('This train has been delayed by', 'Train delayed by');
-            reasonBox.style.borderLeft = '10px solid red'; // Red border for delay
-            reasonBox.style.display = 'flex'; // Show the reason box
+            reasonBox.style.borderLeft = '10px solid red';
+            reasonBox.style.display = 'flex';
+        } else if (service.operator === 'London North Eastern Railway' && !service.delayReason && !service.cancelReason) {
+            reasonBox.textContent = 'Reserve seats up to 5 minutes prior to departure.';
+            reasonBox.style.borderLeft = '10px solid yellow';
+            reasonBox.style.display = 'flex';
+        } else if (service.operator === 'TransPennine Express' && !service.delayReason && !service.cancelReason) {
+            reasonBox.textContent = 'Penalty fares apply on this train, buy before you board.';
+            reasonBox.style.borderLeft = '10px solid yellow';
+            reasonBox.style.display = 'flex';
+        } else if (service.operator === 'Northern' && !service.delayReason && !service.cancelReason) {
+            reasonBox.textContent = 'Penalty fares apply on this train, buy before you board.';
+            reasonBox.style.borderLeft = '10px solid yellow';
+            reasonBox.style.display = 'flex';
+        } else if (service.operator === 'Grand Central' && !service.delayReason && !service.cancelReason) {
+            reasonBox.textContent = 'You MUST have a seat reservation.';
+            reasonBox.style.borderLeft = '10px solid yellow';
+            reasonBox.style.display = 'flex';
         } else {
-            // Handle formation and toilet information
             const formationInfo = handleFormationAndToilets(service);
-
             if (formationInfo) {
-                reasonBox.textContent = formationInfo; // Update reason box with formation info
-                reasonBox.style.borderLeft = '10px solid yellow'; // Yellow border for general info
-                reasonBox.style.display = 'flex'; // Show the reason box
+                reasonBox.textContent = formationInfo;
+                reasonBox.style.borderLeft = '10px solid yellow';
+                reasonBox.style.display = 'flex';
             }
         }
     }
@@ -618,6 +609,8 @@
         }
     }
 
+    
+
     // Function to start updating both the departures and calling points
     function startUpdating(crsCode) {
         // Initial update
@@ -629,7 +622,7 @@
     // Call the initialize function and start updating
     window.onload = function() {
         initialize().then(() => {
-            const crsCode = "EUS"; // You can change this to any valid CRS code
+            const crsCode = "YRK"; // You can change this to any valid CRS code
             startUpdating(crsCode); // Start updating departures and calling points for the CRS code
         });
     };
