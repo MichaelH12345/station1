@@ -486,7 +486,7 @@
 
             // Update station name in the footer
             const stationName = data.locationName || '';
-            document.getElementById('station-name').textContent = `Live departures from ${stationName} Railway Station`;
+            document.getElementById('station-name').textContent = `Welcome to ${stationName} Railway Station`;
 
             // Check if data has a property named 'trainServices'
             if (data.trainServices && data.trainServices.length > 0) {
@@ -629,7 +629,7 @@
     // Call the initialize function and start updating
     window.onload = function() {
         initialize().then(() => {
-            const crsCode = "WBQ"; // You can change this to any valid CRS code
+            const crsCode = "CAR"; // You can change this to any valid CRS code
             startUpdating(crsCode); // Start updating departures and calling points for the CRS code
         });
     };
