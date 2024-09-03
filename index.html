@@ -414,7 +414,7 @@
             reasonBox.style.borderLeft = '10px solid yellow';
             reasonBox.style.display = 'flex';
         } else if (service.operator === 'Northern' && !service.delayReason && !service.cancelReason) {
-            reasonBox.textContent = '';
+            reasonBox.textContent = 'You must have a valid ticket to travel on this train.';
             reasonBox.style.borderLeft = '10px solid yellow';
             reasonBox.style.display = 'flex';
         } else if (service.operator === 'Grand Central' && !service.delayReason && !service.cancelReason) {
